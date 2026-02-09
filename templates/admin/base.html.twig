@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RentAdmin - Dashboard{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF5A5F',
+                        secondary: '#00A699',
+                        dark: '#484848',
+                        light: '#FFFFFF',
+                        background: '#F7F7F7',
+                    },
+                    fontFamily: {
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Open Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ asset('backoffice/css/admin-dashboard.css') }}">
+    
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="bg-background font-body">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        {% include 'admin/_sidebar.html.twig' %}
+        
+        <!-- Main Content -->
+        <main class="flex-1 lg:ml-64 transition-all duration-300">
+            <!-- Header -->
+            {% include 'admin/_header.html.twig' %}
+            
+            <!-- Page Content -->
+            <div class="pt-16 p-4 lg:p-8">
+                {% block body %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="{{ asset('backoffice/js/admin-dashboard.js') }}"></script>
+    {% block javascripts %}{% endblock %}
+</body>
+</html>
+

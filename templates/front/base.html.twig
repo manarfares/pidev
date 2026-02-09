@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Discover unique stays, rent tools, and book services. Your all-in-one rental marketplace.{% endblock %}">
+    <meta name="generator" content="Symfony">
+    
+    <title>{% block title %}RentAll - Stays, Tools & Services{% endblock %}</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+    
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    {% endblock %}
+</head>
+<body class="font-sans antialiased">
+    {% include 'front/_navbar.html.twig' %}
+    
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="container mx-auto px-4 py-2">
+                <div class="rounded-lg border px-4 py-3 {% if label == 'success' %}bg-green-50 border-green-200 text-green-800{% elseif label == 'error' %}bg-red-50 border-red-200 text-red-800{% elseif label == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    
+    <main class="min-h-screen">
+        {% block body %}{% endblock %}
+    </main>
+    
+    {% block footer %}
+        <footer class="border-t border-gray-200 bg-gray-50 py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div>
+                        <h3 class="font-bold text-lg mb-4">RentAll</h3>
+                        <p class="text-sm text-gray-600">Your all-in-one rental marketplace for stays, tools, and services.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Explore</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="{{ path('app_home') }}" class="text-gray-600 hover:text-gray-900">Stays</a></li>
+                            <li><a href="{{ path('app_tools') }}" class="text-gray-600 hover:text-gray-900">Tools</a></li>
+                            <li><a href="{{ path('app_services') }}" class="text-gray-600 hover:text-gray-900">Services</a></li>
+                            <li><a href="{{ path('app_covoiturage') }}" class="text-gray-600 hover:text-gray-900">Covoiturage</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Support</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900">Help Center</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900">Contact Us</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900">Safety</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Legal</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900">Terms of Service</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-600">
+                    <p>&copy; {{ "now"|date("Y") }} RentAll. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    {% endblock %}
+    
+    {% block javascripts %}
+        {{ importmap('app') }}
+    {% endblock %}
+</body>
+</html>

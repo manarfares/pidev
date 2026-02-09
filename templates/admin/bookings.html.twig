@@ -1,0 +1,279 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Réservations - RentAdmin{% endblock %}
+
+{% block search_placeholder %}Rechercher une réservation...{% endblock %}
+
+{% block body %}
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-dark font-heading">Réservations et locations</h1>
+        <p class="text-gray-500 mt-1">Superviser les réservations et détecter les anomalies</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">{{ service_bookings_count|default(4) }} services</span>
+        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">{{ tool_rentals_count|default(2) }} matériel</span>
+        <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">{{ cancelled_count|default(1) }} annulés</span>
+    </div>
+</div>
+
+<!-- Cancellation Alert -->
+{% if cancelled_count|default(0) > 0 %}
+<div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3 mb-6">
+    <i class="fas fa-exclamation-triangle text-amber-600"></i>
+    <div>
+        <p class="font-medium text-amber-800">Alerte annulations</p>
+        <p class="text-sm text-amber-700">{{ cancelled_count }} réservation(s) annulée(s) récemment. Vérifiez les patterns suspects.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tabs -->
+<div class="mb-6">
+    <div class="border-b border-gray-200">
+        <nav class="flex gap-6">
+            <a href="?tab=all" class="pb-3 text-sm font-medium {% if app.request.query.get('tab') != 'services' and app.request.query.get('tab') != 'tools' and app.request.query.get('tab') != 'cancelled' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-dark{% endif %}">
+                Toutes
+            </a>
+            <a href="?tab=services" class="pb-3 text-sm font-medium {% if app.request.query.get('tab') == 'services' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-dark{% endif %}">
+                Services
+            </a>
+            <a href="?tab=tools" class="pb-3 text-sm font-medium {% if app.request.query.get('tab') == 'tools' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-dark{% endif %}">
+                Matériel
+            </a>
+            <a href="?tab=cancelled" class="pb-3 text-sm font-medium {% if app.request.query.get('tab') == 'cancelled' %}text-primary border-b-2 border-primary{% else %}text-gray-500 hover:text-dark{% endif %}">
+                Annulées
+                {% if cancelled_count|default(0) > 0 %}
+                    <span class="ml-1 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{{ cancelled_count }}</span>
+                {% endif %}
+            </a>
+        </nav>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-4">
+        <input type="hidden" name="tab" value="{{ app.request.query.get('tab', 'all') }}">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" 
+                   name="search"
+                   value="{{ app.request.query.get('search') }}"
+                   placeholder="Rechercher une réservation..."
+                   class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+        </div>
+        <div class="flex gap-2">
+            <select name="type" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">Tous les types</option>
+                <option value="service" {% if app.request.query.get('type') == 'service' %}selected{% endif %}>Services</option>
+                <option value="tool" {% if app.request.query.get('type') == 'tool' %}selected{% endif %}>Matériel</option>
+            </select>
+            <select name="status" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <option value="">Tous les statuts</option>
+                <option value="requested" {% if app.request.query.get('status') == 'requested' %}selected{% endif %}>Demandée</option>
+                <option value="confirmed" {% if app.request.query.get('status') == 'confirmed' %}selected{% endif %}>Confirmée</option>
+                <option value="completed" {% if app.request.query.get('status') == 'completed' %}selected{% endif %}>Terminée</option>
+                <option value="cancelled" {% if app.request.query.get('status') == 'cancelled' %}selected{% endif %}>Annulée</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 transition-colors">
+                <i class="fas fa-filter"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Bookings Table -->
+<div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Voyageur</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hôte</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for booking in bookings|default([
+                    { id: 'b1', type: 'service', itemId: 's1', itemName: 'Cours de cuisine française', guestId: 'u2', guestName: 'Jean Martin', hostId: 'u1', hostName: 'Marie Dubois', status: 'confirmed', startDate: '2024-02-15', endDate: '2024-02-15', totalAmount: 85, createdAt: '2024-01-10' },
+                    { id: 'b2', type: 'tool', itemId: 't1', itemName: 'Perceuse sans fil Bosch', guestId: 'u4', guestName: 'Lucas Petit', hostId: 'u6', hostName: 'Thomas Moreau', status: 'completed', startDate: '2024-01-10', endDate: '2024-01-12', totalAmount: 30, createdAt: '2024-01-05' },
+                    { id: 'b3', type: 'service', itemId: 's3', itemName: 'Visite guidée du Louvre', guestId: 'u7', guestName: 'Camille Leroy', hostId: 'u3', hostName: 'Sophie Bernard', status: 'cancelled', startDate: '2024-01-20', endDate: '2024-01-20', totalAmount: 50, createdAt: '2024-01-08', cancelledAt: '2024-01-15', cancellationReason: 'Host unavailable' },
+                    { id: 'b4', type: 'tool', itemId: 't2', itemName: 'Appareil photo Canon EOS', guestId: 'u2', guestName: 'Jean Martin', hostId: 'u8', hostName: 'Nicolas Fournier', status: 'requested', startDate: '2024-02-01', endDate: '2024-02-05', totalAmount: 140, createdAt: '2024-01-18' },
+                    { id: 'b5', type: 'service', itemId: 's4', itemName: 'Cours de photographie', guestId: 'u4', guestName: 'Lucas Petit', hostId: 'u8', hostName: 'Nicolas Fournier', status: 'completed', startDate: '2024-01-05', endDate: '2024-01-05', totalAmount: 120, createdAt: '2023-12-20' },
+                    { id: 'b6', type: 'tool', itemId: 't3', itemName: 'Tente de camping 4 personnes', guestId: 'u7', guestName: 'Camille Leroy', hostId: 'u1', hostName: 'Marie Dubois', status: 'confirmed', startDate: '2024-02-10', endDate: '2024-02-15', totalAmount: 125, createdAt: '2024-01-15' },
+                ]) %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="p-1.5 rounded-lg w-fit {% if booking.type == 'service' %}bg-blue-100{% else %}bg-green-100{% endif %}">
+                                {% if booking.type == 'service' %}
+                                    <i class="fas fa-briefcase text-blue-600"></i>
+                                {% else %}
+                                    <i class="fas fa-wrench text-green-600"></i>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-dark">{{ booking.itemName }}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div>
+                                <p class="text-sm">{{ booking.guestName }}</p>
+                                <p class="text-xs {% if booking.guestCancellationRate|default(0) > 10 %}text-red-500{% else %}text-green-500{% endif %}">
+                                    {{ booking.guestCancellationRate|default(8) }}% annul.
+                                </p>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div>
+                                <p class="text-sm">{{ booking.hostName }}</p>
+                                <p class="text-xs {% if booking.hostCancellationRate|default(0) > 10 %}text-red-500{% else %}text-green-500{% endif %}">
+                                    {{ booking.hostCancellationRate|default(3) }}% annul.
+                                </p>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="text-sm">{{ booking.startDate|date('d/m/Y') }}</p>
+                            <p class="text-xs text-gray-500">au {{ booking.endDate|date('d/m/Y') }}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="font-medium">{{ booking.totalAmount }}€</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if booking.status == 'requested' %}
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Demandée</span>
+                            {% elseif booking.status == 'confirmed' %}
+                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Confirmée</span>
+                            {% elseif booking.status == 'completed' %}
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Terminée</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">Annulée</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="p-2 hover:bg-gray-100 rounded-lg" onclick="openBookingModal('{{ booking.id }}')">
+                                <i class="fas fa-eye text-gray-400"></i>
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Booking Details Modal -->
+<div id="booking-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-dark">Détails de la réservation</h3>
+            <button onclick="closeBookingModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-6" id="booking-modal-content">
+            <!-- Content loaded via JS -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const bookingsData = {{ bookings|default([
+    { id: 'b1', type: 'service', itemId: 's1', itemName: 'Cours de cuisine française', guestId: 'u2', guestName: 'Jean Martin', hostId: 'u1', hostName: 'Marie Dubois', status: 'confirmed', startDate: '2024-02-15', endDate: '2024-02-15', totalAmount: 85, createdAt: '2024-01-10' },
+    { id: 'b2', type: 'tool', itemId: 't1', itemName: 'Perceuse sans fil Bosch', guestId: 'u4', guestName: 'Lucas Petit', hostId: 'u6', hostName: 'Thomas Moreau', status: 'completed', startDate: '2024-01-10', endDate: '2024-01-12', totalAmount: 30, createdAt: '2024-01-05' },
+    { id: 'b3', type: 'service', itemId: 's3', itemName: 'Visite guidée du Louvre', guestId: 'u7', guestName: 'Camille Leroy', hostId: 'u3', hostName: 'Sophie Bernard', status: 'cancelled', startDate: '2024-01-20', endDate: '2024-01-20', totalAmount: 50, createdAt: '2024-01-08', cancelledAt: '2024-01-15', cancellationReason: 'Host unavailable' },
+    { id: 'b4', type: 'tool', itemId: 't2', itemName: 'Appareil photo Canon EOS', guestId: 'u2', guestName: 'Jean Martin', hostId: 'u8', hostName: 'Nicolas Fournier', status: 'requested', startDate: '2024-02-01', endDate: '2024-02-05', totalAmount: 140, createdAt: '2024-01-18' },
+    { id: 'b5', type: 'service', itemId: 's4', itemName: 'Cours de photographie', guestId: 'u4', guestName: 'Lucas Petit', hostId: 'u8', hostName: 'Nicolas Fournier', status: 'completed', startDate: '2024-01-05', endDate: '2024-01-05', totalAmount: 120, createdAt: '2023-12-20' },
+    { id: 'b6', type: 'tool', itemId: 't3', itemName: 'Tente de camping 4 personnes', guestId: 'u7', guestName: 'Camille Leroy', hostId: 'u1', hostName: 'Marie Dubois', status: 'confirmed', startDate: '2024-02-10', endDate: '2024-02-15', totalAmount: 125, createdAt: '2024-01-15' },
+])|json_encode|raw }};
+
+const statusLabels = { requested: 'Demandée', confirmed: 'Confirmée', completed: 'Terminée', cancelled: 'Annulée' };
+const statusClass = { requested: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700', completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };
+
+function openBookingModal(bookingId) {
+    const booking = bookingsData.find(b => b.id === bookingId);
+    if (!booking) return;
+    
+    document.getElementById('booking-modal-content').innerHTML = `
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Réservation #${booking.id}</p>
+                <p class="text-xs text-gray-400">Créée le ${new Date(booking.createdAt).toLocaleDateString('fr-FR')}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass[booking.status]}">${statusLabels[booking.status]}</span>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg ${booking.type === 'service' ? 'bg-blue-100' : 'bg-green-100'}">
+                    <i class="fas ${booking.type === 'service' ? 'fa-briefcase text-blue-600' : 'fa-wrench text-green-600'}"></i>
+                </div>
+                <div>
+                    <p class="font-medium">${booking.itemName}</p>
+                    <p class="text-sm text-gray-500">${booking.type === 'service' ? 'Service' : 'Location de matériel'}</p>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500 mb-2">Voyageur</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">${booking.guestName.charAt(0)}</div>
+                    <div>
+                        <p class="font-medium">${booking.guestName}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-500 mb-2">Hôte</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center font-bold">${booking.hostName.charAt(0)}</div>
+                    <div>
+                        <p class="font-medium">${booking.hostName}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Date de début</p>
+                <p class="font-medium">${new Date(booking.startDate).toLocaleDateString('fr-FR')}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 mb-1">Date de fin</p>
+                <p class="font-medium">${new Date(booking.endDate).toLocaleDateString('fr-FR')}</p>
+            </div>
+        </div>
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span class="text-gray-600">Montant total</span>
+            <span class="text-xl font-bold text-primary">${booking.totalAmount}€</span>
+        </div>
+        ${booking.status === 'cancelled' ? `
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="font-medium text-red-800 mb-1">Annulation</p>
+            <p class="text-sm text-red-700">Annulée le ${new Date(booking.cancelledAt).toLocaleDateString('fr-FR')}</p>
+            ${booking.cancellationReason ? `<p class="text-sm text-red-600 mt-1">Raison: ${booking.cancellationReason}</p>` : ''}
+        </div>
+        ` : ''}
+    `;
+    
+    document.getElementById('booking-modal').classList.remove('hidden');
+}
+
+function closeBookingModal() {
+    document.getElementById('booking-modal').classList.add('hidden');
+}
+
+document.getElementById('booking-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeBookingModal();
+});
+</script>
+{% endblock %}
+
