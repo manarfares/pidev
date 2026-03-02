@@ -1,0 +1,9 @@
+parameters:
+    level: 8
+    paths:
+        - src/Controller/Front/HomeController.php
+        - src/Controller/Front/SecurityController.php
+        - src/Repository/AvisRepository.php
+        - src/Service/BadWordsFilter.php
+        - src/Service/AiRiskScoringService.php
+        - src/Entity/User.php

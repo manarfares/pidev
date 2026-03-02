@@ -69,15 +69,16 @@ class HomeController extends AbstractController
 
         $logements = $queryBuilder->getQuery()->getResult();
 
-        // Get ratings for each logement
-        $ratings = [];
+        // Evite les requetes N+1 sur les avis: aggregation en une seule requete.
+        $ratings = $avisRepository->getRatingsSummaryForLogements($logements);
         foreach ($logements as $logement) {
-            $avgRating = $avisRepository->getAverageRatingForLogement($logement);
-            $totalAvis = count($avisRepository->findByLogement($logement));
-            $ratings[$logement->getId()] = [
-                'average' => $avgRating,
-                'total' => $totalAvis,
-            ];
+            $id = $logement->getId();
+            if (!isset($ratings[$id])) {
+                $ratings[$id] = [
+                    'average' => null,
+                    'total' => 0,
+                ];
+            }
         }
 
         return $this->render('front/home/index.html.twig', [
@@ -113,5 +114,4 @@ class HomeController extends AbstractController
         ]);
     }
 }
-
 

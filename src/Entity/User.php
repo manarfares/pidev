@@ -120,6 +120,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_unique($roles);
     }
 
+    /**
+     * @param list<string> $roles
+     */
     public function setRoles(array $roles): self
     {
         $this->roles = $roles;
@@ -128,7 +131,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getPassword(): string
     {
-        return $this->password;
+        return $this->password ?? '';
     }
 
     public function setPassword(string $password): self
@@ -372,7 +375,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->accountStatus = self::STATUS_SUSPENDED;
         $this->suspendedUntil = $this->toMutableDateTime($until);
-        $this->suspiciousActivityScore = min(999, $this->suspiciousActivityScore + 10);
+        $this->increaseSuspiciousActivity(10);
         return $this;
     }
 
@@ -398,7 +401,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->failedLoginAttempts++;
         $this->lastFailedLoginAt = new \DateTime();
-        $this->suspiciousActivityScore = min(999, $this->suspiciousActivityScore + 1);
+        $this->increaseSuspiciousActivity(1);
         return $this;
     }
 
@@ -407,9 +410,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->lastLoginAt = new \DateTime();
         $this->lastLoginIp = $ipAddress ? substr($ipAddress, 0, 45) : null;
         $this->failedLoginAttempts = 0;
-        if ($this->suspiciousActivityScore > 0) {
-            $this->suspiciousActivityScore--;
+        $this->decreaseSuspiciousActivity(1);
+        return $this;
+    }
+
+    public function increaseSuspiciousActivity(int $amount = 1): self
+    {
+        if ($amount <= 0) {
+            return $this;
         }
+
+        $this->suspiciousActivityScore = min(999, $this->suspiciousActivityScore + $amount);
+        return $this;
+    }
+
+    public function decreaseSuspiciousActivity(int $amount = 1): self
+    {
+        if ($amount <= 0) {
+            return $this;
+        }
+
+        $this->suspiciousActivityScore = max(0, $this->suspiciousActivityScore - $amount);
         return $this;
     }
 

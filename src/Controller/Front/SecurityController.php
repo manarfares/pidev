@@ -30,7 +30,7 @@ class SecurityController extends AbstractController
         // Last username entered by the user
         $lastUsername = $authenticationUtils->getLastUsername();
         $session = $this->requestStack->getSession();
-        $reactivationEmail = $session?->get('reactivation_email');
+        $reactivationEmail = $session->get('reactivation_email');
 
         return $this->render('front/security/login.html.twig', [
             'last_username' => $lastUsername,
@@ -92,7 +92,13 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        $tempDir = $this->getParameter('kernel.project_dir') . '/var/face-login';
+        $projectDirParam = $this->getParameter('kernel.project_dir');
+        if (!is_string($projectDirParam)) {
+            $this->addFlash('error', 'Configuration projet invalide.');
+            return $this->redirectToRoute('app_login');
+        }
+        $projectDir = $projectDirParam;
+        $tempDir = $projectDir . '/var/face-login';
         if (!is_dir($tempDir)) {
             mkdir($tempDir, 0775, true);
         }
@@ -117,10 +123,20 @@ class SecurityController extends AbstractController
             if (!$candidate instanceof User || $candidate->getSelfieImage() === null) {
                 continue;
             }
+            $absolutePath = $projectDir . '/public' . $candidate->getSelfieImage();
+            if (!is_file($absolutePath) || !is_readable($absolutePath)) {
+                continue;
+            }
             $candidatePayload[] = [
                 'id' => (int) $candidate->getId(),
-                'path' => $this->getParameter('kernel.project_dir') . '/public' . $candidate->getSelfieImage(),
+                'path' => $absolutePath,
             ];
+        }
+
+        if ($candidatePayload === []) {
+            @unlink($tempFile);
+            $this->addFlash('error', 'Aucune photo de reference valide n est disponible pour la connexion faciale.');
+            return $this->redirectToRoute('app_login');
         }
 
         $identifyResult = $faceVerificationService->identifyBestUser(
@@ -137,7 +153,10 @@ class SecurityController extends AbstractController
 
         $bestUserId = $identifyResult['userId'];
         if ($bestUserId === null) {
-            $this->addFlash('error', 'Visage non reconnu. Regardez la camera de face, sans contre-jour, puis reessayez.');
+            $this->addFlash(
+                'error',
+                $identifyResult['error'] ?? 'Visage non reconnu. Regardez la camera de face, sans contre-jour, puis reessayez.'
+            );
             return $this->redirectToRoute('app_login');
         }
 

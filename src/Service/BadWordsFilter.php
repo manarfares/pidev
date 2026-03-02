@@ -4,6 +4,9 @@ namespace App\Service;
 
 class BadWordsFilter
 {
+    /**
+     * @var list<string>
+     */
     private array $badWords;
 
     public function __construct()
@@ -46,7 +49,10 @@ class BadWordsFilter
         
         foreach ($this->badWords as $badWord) {
             $replacement = str_repeat('*', mb_strlen($badWord));
-            $result = preg_replace('/\b' . preg_quote($badWord, '/') . '\b/iu', $replacement, $result);
+            $replaced = preg_replace('/\b' . preg_quote($badWord, '/') . '\b/iu', $replacement, $result);
+            if ($replaced !== null) {
+                $result = $replaced;
+            }
         }
         
         return $result;
@@ -54,6 +60,9 @@ class BadWordsFilter
 
     /**
      * Retourne les mots interdits trouvés
+     */
+    /**
+     * @return list<string>
      */
     public function getBadWords(string $text): array
     {
@@ -66,6 +75,9 @@ class BadWordsFilter
             }
         }
         
-        return array_unique($found);
+        /** @var list<string> $unique */
+        $unique = array_values(array_unique($found));
+
+        return $unique;
     }
 }
